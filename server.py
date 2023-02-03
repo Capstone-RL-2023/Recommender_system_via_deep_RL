@@ -6,26 +6,26 @@ import json
 from envs import OfflineEnv
 from recommender import DRRAgent
 from eval import evaluate
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 
 ROOT_DIR = os.getcwd()
 DATA_DIR = os.path.join(ROOT_DIR, 'ml-1m')
-SAVED_ACTOR = './save_weight/actor_model.h5'
-SAVED_CRITIC = './save_weight/critic_model.h5'
+SAVED_ACTOR = ROOT_DIR+'/save_weight/actor_model.h5'
+SAVED_CRITIC = ROOT_DIR+'/save_weight/critic_model.h5'
 STATE_SIZE = 10
 app = Flask(__name__)
 
 @app.route('/recommend', methods=['GET'])
 def get_recommendations():
-    user_id = requrest.args.get('user_id')
+    user_id = request.args.get('user_id')
     response = {"success": False,
-                "user_id": user_id,
-                "recommendations": recommendations}
+                "user_id": user_id}
     
     # Load and modify dataset
     try:
-        users_dict = np.load("./data/user_dict.npy", )
-        users_history_lens = np.load("./data/users_histroy_len.npy", )
+        # You will need to run evaluations.ipynb first for these files
+        users_dict = np.load(ROOT_DIR+"/data/user_dict.npy", allow_pickle=True)
+        users_history_lens = np.load(ROOT_DIR+"/data/users_histroy_len.npy", allow_pickle=True)
         ratings_list = [i.strip().split("::") for i in open(os.path.join(DATA_DIR,'ratings.dat'), 'r').readlines()]
         users_list = [i.strip().split("::") for i in open(os.path.join(DATA_DIR,'users.dat'), 'r').readlines()]
         movies_list = [i.strip().split("::") for i in open(os.path.join(DATA_DIR,'movies.dat'),encoding='latin-1').readlines()]
@@ -46,8 +46,10 @@ def get_recommendations():
         recommender = DRRAgent(env, users_num, items_num, STATE_SIZE)
         recommender.actor.build_networks()
         recommender.critic.build_networks()
-        recommender.load_model(saved_actor, saved_critic)
-        precision, ndcg = evaluate(recommender, env, check_movies=True, top_k=TOP_K) # if check movies is true, you can check the recommended movies
+        recommender.load_model(SAVED_ACTOR, SAVED_CRITIC)
+        recommended_items, precision, ndcg = evaluate(recommender, env, check_movies=True, top_k=TOP_K) # if check movies is true, you can check the recommended movies
+        
+        response["recommendations"] = recommended_items
     except Exception as e:
         response["error"] = str(e)
      
