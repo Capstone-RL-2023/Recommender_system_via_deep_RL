@@ -2,7 +2,6 @@ import numpy as np
 
 # Version from Shanu
 
-
 def evaluate(recommender, env, check_movies=False, top_k=False, length=False):
     # episodic reward
     mean_precision = 0
@@ -59,7 +58,7 @@ def evaluate(recommender, env, check_movies=False, top_k=False, length=False):
         episode_reward += reward
         steps += 1
 
-    return mean_precision, mean_ndcg, reward
+    return np.array(env.get_items_names(recommended_item), dtype=object), mean_precision, mean_ndcg, reward
 
 
 def calculate_ndcg(rel, irel):
@@ -69,4 +68,4 @@ def calculate_ndcg(rel, irel):
     for i, (r, ir) in enumerate(zip(rel, irel)):
         dcg += (r)/np.log2(i+2)
         idcg += (ir)/np.log2(i+2)
-        return dcg, idcg
+    return dcg, idcg
