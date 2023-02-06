@@ -2,19 +2,13 @@ import numpy as np
 
 # Version from Shanu
 
-def evaluate(recommender, env, check_movies=False, top_k=False, length=False):
+
+def evaluate(recommender, env, check_movies=False, top_k=False):
     # episodic reward
     mean_precision = 0
     mean_ndcg = 0
-
-    # episodic reward
     episode_reward = 0
     steps = 0
-    q_loss1 = 0
-    q_loss2 = 0
-    countl = 0
-    correct_list = []
-
     # Environment    
     user_id, items_ids, done = env.reset()
     while not done:
@@ -33,31 +27,38 @@ def evaluate(recommender, env, check_movies=False, top_k=False, length=False):
         # Item        
         recommended_item = recommender.recommend_item(
             action, env.recommended_items, top_k=top_k)
-
+        if check_movies:
+            print(f'recommended items ids : {recommended_item}')
+            print(
+                f'recommened items : \n {np.array(env.get_items_names(recommended_item), dtype=object)}')
         next_items_ids, reward, done, _ = env.step(
             recommended_item, top_k=top_k)
-        #print("done :",done)       
+        print("done :", done)
 
-        if countl < length:
-            countl += 1
-            #print("countl :",countl)
-            correct_list.append(reward)
-            if done == True:
-                dcg, idcg = calculate_ndcg(
-                    correct_list, [1 for _ in range(len(correct_list))])
-                #print("dcg :", dcg, "idcg :", idcg)
-                mean_ndcg += dcg/idcg
-                print("mean_ndcg :", mean_ndcg)
+        if top_k:
+            correct_list = [1 if r > 0 else 0 for r in reward]
+            # ndcg
+            dcg, idcg = calculate_ndcg(
+                correct_list, [1 for _ in range(len(reward))])
+            mean_ndcg += dcg/idcg
 
             # precision
-            correct_list1 = [1 if r > 0 else 0 for r in correct_list]
-            correct_num = length-correct_list1.count(0)
-            mean_precision += correct_num/length
+            correct_num = top_k-correct_list.count(0)
+            mean_precision += correct_num/top_k
 
+            # precision
+        reward = np.sum(reward)
         items_ids = next_items_ids
         episode_reward += reward
         steps += 1
+        if check_movies:
+            print(
+                f'precision : {correct_num/top_k}, dcg : {dcg:0.3f}, idcg : {idcg:0.3f}, ndcg : {dcg/idcg:0.3f}, reward : {reward}')
+        break
 
+    if check_movies:
+        print(
+            f'precision : {mean_precision/steps}, ngcg : {mean_ndcg/steps}, episode_reward : {episode_reward}')
     return np.array(env.get_items_names(recommended_item), dtype=object), mean_precision, mean_ndcg, reward
 
 
