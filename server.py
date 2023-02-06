@@ -19,8 +19,8 @@ app = Flask(__name__)
 
 @app.route('/recommend', methods=['GET'])
 def get_recommendations():
-    # Try using ...?user_id=4833
-    user_id = int(request.args.get('user_id'))
+    id = request.args.get('user_id')
+    user_id = int(id) if id else 4833
     response = {"success": False,
                 "user_id": user_id}
 
